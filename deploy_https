@@ -69,4 +69,5 @@ scp $BUNDLE $CSR $REMOTE:$SSL_DIR && \
 execute "cat $TEMPLATE | sed 's/DOMAIN/$DOMAIN/g' > $NGINX_SITE_CONF" && \
 execute "ln -s $NGINX_SITE_CONF $NGINX_SE_DIR" && \
 execute "$RESTART_NGINX" && \
+execute "cd /home/wwwkiiiosk/kiiiosk.ru/current; sudo -u wwwkiiiosk bundle exec rails runner \"Vendor.find_by_domain('lavaomg.com').update_attribute :https_custom_domain, '${DOMAIN}'\"" && \
 echo 'ok'
