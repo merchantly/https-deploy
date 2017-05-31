@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+
+BUNDLE='ssl-bundle.crt'
+CSR='csr.key'
+TEMPLATE='/etc/nginx/sites-available/TEMPLATE.conf'
+RESTART_NGINX="nginx -t && service nginx reload"
+
+VALIDATED_BUNDLE="domain_validated.ca-bundle"
+LOGIN="root"
+SERVER="srv-1.kiiiosk.ru"
+REMOTE="$LOGIN@$SERVER"
+
+CERT=$1
+CSR=$2
+DOMAIN=$3
+
+function show_help() {
+echo "Скрипт делает следующее:"
+echo "1. Создает ${BUNDLE} на основе ${VALIDATED_BUNDLE} и сертификата"
+echo "2. Копирует ${BUNDLE} и ${CSR} на сервер в папку /etc/nginx/ssl/DOMAIN"
+echo "3. Создает по шаблону с сервера ${TEMPLATE} конфиг для домена в файле /etc/nginx/sites-available/DOMAIN.conf и далает для него симлинк в /etc/nginx/sites-enabled"
+echo "4. Перезагружает nginx: $RESTART_NGINX"
+echo
+echo "Запускам с параметрами 'сертификат' 'csr ключ' 'домен':"
+echo "> ./deploy_https ./lavaomg_com.crt ./csr.key lavaomg.com"
+echo
+echo "Также смотри: https://github.com/BrandyMint/merchantly/wiki/Покупка-и-Установка-HTTPS"
+echo 
+}
+
+if [ -z "$DOMAIN" ]; then
+  show_help
+  echo "Укажите домен"
+  exit 1
+fi
+
+if ! [ -f "$CERT" ]; then
+  show_help
+  echo "В кателоге нет файла $CERT"
+  exit 1
+fi
+
+if ! [ -f "$CSR" ]; then
+  show_help
+  echo "В кателоге нет файла $CSR"
+  exit 1
+fi
+
+
+NGINX_SITE_CONF="/etc/nginx/sites-available/$DOMAIN.conf"
+NGINX_SE_DIR="/etc/nginx/sites-enabled/"
+SSL_DIR="/etc/nginx/ssl/$DOMAIN"
+
+function execute() {
+  cmd=$1
+  echo "Выполняю удаленно: $cmd"
+  ssh $REMOTE "$cmd"
+  res=$?
+
+  echo -e "\tРезультат: $res"
+  echo
+  return $res
+}
+
+rm -f $BUNDLE && \
+cat $CERT $VALIDATED_BUNDLE > $BUNDLE && \
+execute "mkdir $SSL_DIR" && \
+scp $BUNDLE $CSR $REMOTE:$SSL_DIR && \
+execute "cat $TEMPLATE | sed 's/DOMAIN/$DOMAIN/g' > $NGINX_SITE_CONF" && \
+execute "ln -s $NGINX_SITE_CONF $NGINX_SE_DIR" && \
+execute "$RESTART_NGINX" && \
+echo 'ok'
