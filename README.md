@@ -1,5 +1,7 @@
 # https-deploy
 
+* [ ] Перенести в capistrano или rake
+* [ ] Учитывать rbenv
 
 # Документация 
 
