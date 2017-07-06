@@ -9,6 +9,7 @@ VALIDATED_BUNDLE="domain_validated.ca-bundle"
 LOGIN="root"
 SERVER="srv-1.kiiiosk.ru"
 REMOTE="$LOGIN@$SERVER"
+WWW_REMOTE="wwwonelec@$SERVER"
 
 CERT=$1
 CSR=$2
@@ -52,9 +53,10 @@ NGINX_SE_DIR="/etc/nginx/sites-enabled/"
 SSL_DIR="/etc/nginx/ssl/$DOMAIN"
 
 function execute() {
-  cmd=$1
+  remote=$1
+  cmd=$2
   echo "Выполняю удаленно: $cmd"
-  ssh $REMOTE "$cmd"
+  ssh $remote "$cmd"
   res=$?
 
   echo -e "\tРезультат: $res"
@@ -64,10 +66,10 @@ function execute() {
 
 rm -f $BUNDLE && \
 cat $CERT $VALIDATED_BUNDLE > $BUNDLE && \
-execute "mkdir $SSL_DIR" && \
+execute $REMOTE "mkdir $SSL_DIR" && \
 scp $BUNDLE $CSR $REMOTE:$SSL_DIR && \
-execute "cat $TEMPLATE | sed 's/DOMAIN/$DOMAIN/g' > $NGINX_SITE_CONF" && \
-execute "ln -s $NGINX_SITE_CONF $NGINX_SE_DIR" && \
-execute "$RESTART_NGINX" && \
-execute "cd /home/wwwkiiiosk/kiiiosk.ru/current; sudo -u wwwkiiiosk bundle exec rails runner \"Vendor.find_by_domain('lavaomg.com').update_attribute :https_custom_domain, '${DOMAIN}'\"" && \
+execute $REMOTE "cat $TEMPLATE | sed 's/DOMAIN/$DOMAIN/g' > $NGINX_SITE_CONF" && \
+execute $REMOTE "ln -s $NGINX_SITE_CONF $NGINX_SE_DIR" && \
+execute $REMOTE "$RESTART_NGINX" && \
+execute $WWW_REMOTE "cd /home/wwwkiiiosk/kiiiosk.ru/current; bundle exec rails runner \"Vendor.find_by_domain('${DOMAIN}').update_attribute :https_custom_domain, '${DOMAIN}'\"" && \
 echo 'ok'
