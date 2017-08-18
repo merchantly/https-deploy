@@ -9,7 +9,7 @@ VALIDATED_BUNDLE="domain_validated.ca-bundle"
 LOGIN="root"
 SERVER="srv-1.kiiiosk.ru"
 REMOTE="$LOGIN@$SERVER"
-WWW_REMOTE="wwwonelec@$SERVER"
+WWW_REMOTE="wwwkiiiosk@$SERVER"
 
 CERT=$1
 CSR=$2
@@ -71,5 +71,5 @@ scp $BUNDLE $CSR $REMOTE:$SSL_DIR && \
 execute $REMOTE "cat $TEMPLATE | sed 's/DOMAIN/$DOMAIN/g' > $NGINX_SITE_CONF" && \
 execute $REMOTE "ln -s $NGINX_SITE_CONF $NGINX_SE_DIR" && \
 execute $REMOTE "$RESTART_NGINX" && \
-execute $WWW_REMOTE "cd /home/wwwkiiiosk/kiiiosk.ru/current; bundle exec rails runner \"Vendor.find_by_domain('${DOMAIN}').update_attribute :https_custom_domain, '${DOMAIN}'\"" && \
+execute $WWW_REMOTE "cd /home/wwwkiiiosk/kiiiosk.ru/current; RAILS_ENV=production bundle exec rails runner \"Vendor.find_by_domain('${DOMAIN}').update_attribute :https_custom_domain, '${DOMAIN}'\"" && \
 echo 'ok'
